@@ -181,6 +181,7 @@ app_detail_fields_with_site = {
     "icon": fields.String,
     "icon_background": fields.String,
     "icon_url": AppIconUrlField,
+    "is_public": fields.Boolean,    # code add
     "enable_site": fields.Boolean,
     "enable_api": fields.Boolean,
     "model_config": fields.Nested(model_config_fields, attribute="app_model_config", allow_null=True),

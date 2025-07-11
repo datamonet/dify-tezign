@@ -2,7 +2,7 @@ from typing import Optional
 
 from constants.languages import languages
 from extensions.ext_database import db
-from models.model import App, RecommendedApp
+from models.model import Account, App, RecommendedApp
 from services.app_dsl_service import AppDslService
 from services.recommend_app.recommend_app_base import RecommendAppRetrievalBase
 from services.recommend_app.recommend_app_type import RecommendAppType
@@ -31,9 +31,10 @@ class DatabaseRecommendAppRetrieval(RecommendAppRetrievalBase):
         :param language: language
         :return:
         """
+        # code add
         recommended_apps = (
             db.session.query(RecommendedApp)
-            .filter(RecommendedApp.is_listed == True, RecommendedApp.language == language)
+            .filter(RecommendedApp.is_listed == True, App.is_public == True,RecommendedApp.language == language)
             .all()
         )
 

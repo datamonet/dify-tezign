@@ -50,8 +50,8 @@ class AppService:
         elif args["mode"] == "channel":
             filters.append(App.mode == AppMode.CHANNEL.value)
 
-        if args.get("is_created_by_me", False):
-            filters.append(App.created_by == user_id)
+        # code add：显示自己的应用或公开的应用
+        filters.append(db.or_(App.created_by == user_id, App.is_public == True))
         if args.get("name"):
             name = args["name"][:30]
             filters.append(App.name.ilike(f"%{name}%"))
@@ -230,6 +230,8 @@ class AppService:
         :return: App instance
         """
         app.name = args.get("name")
+        # 注释：设置app公开状态
+        app.is_public = args.get("is_public", False)
         app.description = args.get("description", "")
         app.icon_type = args.get("icon_type", "emoji")
         app.icon = args.get("icon")

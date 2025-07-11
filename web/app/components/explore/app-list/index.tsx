@@ -59,6 +59,7 @@ const Apps = ({
 
   const {
     data: { categories, allList },
+    isLoading,
   } = useSWR(
     ['/explore/apps'],
     () =>
@@ -153,10 +154,21 @@ const Apps = ({
     })
   }, [handleImportDSLConfirm, onSuccess])
 
-  if (!categories || categories.length === 0) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center">
         <Loading type="area" />
+      </div>
+    )
+  }
+
+  if (!categories || categories.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-medium text-text-secondary">{t('explore.apps.noCategories')}</p>
+          <p className="mt-2 text-sm text-text-tertiary">{t('explore.apps.tryAgainLater')}</p>
+        </div>
       </div>
     )
   }

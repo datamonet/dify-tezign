@@ -55,6 +55,26 @@ class RecommendedAppListApi(Resource):
 
         return RecommendedAppService.get_recommended_apps_and_categories(language_prefix)
 
+    # code add
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Create Recommended App"""
+        parser = reqparse.RequestParser()
+        parser.add_argument("app_id", type=str, required=True, location="json")
+        parser.add_argument("description", type=str, location="json")
+        parser.add_argument("category", type=str, location="json")
+        args = parser.parse_args()
+        app_detail = RecommendedAppService.get_recommend_app_detail(args["app_id"])
+        if app_detail:
+            return {"message": "Recommended app already exists"}, 409
+
+        recommended_app_service = RecommendedAppService()
+        app = recommended_app_service.create_app(args)
+
+        return app, 201
+
+
 
 class RecommendedAppApi(Resource):
     @login_required
@@ -62,7 +82,13 @@ class RecommendedAppApi(Resource):
     def get(self, app_id):
         app_id = str(app_id)
         return RecommendedAppService.get_recommend_app_detail(app_id)
-
+    # code add
+    @login_required
+    @account_initialization_required
+    def delete(self, app_id):
+        """Delete app"""
+        RecommendedAppService().delete_app(app_id)
+        return {"result": "success"}, 204
 
 api.add_resource(RecommendedAppListApi, "/explore/apps")
 api.add_resource(RecommendedAppApi, "/explore/apps/<uuid:app_id>")

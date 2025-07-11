@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useMemo,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
@@ -48,6 +49,8 @@ import { useAppWhiteListSubjects, useGetUserCanAccessApp } from '@/service/acces
 import { AccessMode } from '@/models/access-control'
 import { fetchAppDetail } from '@/service/apps'
 import { useGlobalPublicStore } from '@/context/global-public-context'
+import { createRecommendedApp, deleteRecommendedApp } from '@/service/explore'
+import PermissionsRadio from './permissions-radio'
 
 export type AppPublisherProps = {
   disabled?: boolean
@@ -87,6 +90,8 @@ const AppPublisher = ({
   const { t } = useTranslation()
   const [published, setPublished] = useState(false)
   const [open, setOpen] = useState(false)
+  const [postStatus, setPostStatus] = useState(false)
+  const [posted, setPosted] = useState(false)
   const appDetail = useAppStore(state => state.appDetail)
   const setAppDetail = useAppStore(s => s.setAppDetail)
   const systemFeatures = useGlobalPublicStore(s => s.systemFeatures)
@@ -120,15 +125,34 @@ const AppPublisher = ({
     return dayjs(time).locale(language === 'zh_Hans' ? 'zh-cn' : language.replace('_', '-')).fromNow()
   }, [language])
 
+  const handlePosted = async () => {
+    if (postStatus === posted)
+      return
+
+    if (posted) {
+      await createRecommendedApp(
+        appDetail?.id || '',
+        appDetail?.description,
+        appMode,
+      )
+    }
+    else {
+      await deleteRecommendedApp(appDetail?.id || '')
+    }
+    // mutate()
+  }
+
   const handlePublish = useCallback(async (params?: ModelAndParameter | PublishWorkflowParams) => {
     try {
+      // takin code:设置app的公开状态
+      await handlePosted()
       await onPublish?.(params)
       setPublished(true)
     }
     catch {
       setPublished(false)
     }
-  }, [onPublish])
+  }, [onPublish, published, posted, handlePosted])
 
   const handleRestore = useCallback(async () => {
     try {
@@ -182,6 +206,23 @@ const AppPublisher = ({
     handlePublish()
   },
     { exactMatch: true, useCapture: true })
+
+  useMemo(() => {
+    const handlePostStatus = async () => {
+      try {
+        const response = await fetchAppDetail({ url: '/apps', id: appDetail!.id })
+        console.log(response)
+        setPosted(!!response.is_public)
+        setPostStatus(!!response.is_public)
+      }
+      catch (e) {
+        setPosted(false)
+      }
+    }
+
+    if (appDetail)
+      handlePostStatus()
+  }, [appDetail])
 
   return (
     <>
@@ -266,6 +307,14 @@ const AppPublisher = ({
                 )
               }
             </div>
+            <PermissionsRadio
+                itemClassName="sm:w-36 text-sm mt-2 mb-4 mx-4"
+                      value={posted ? 'all_team_members' : 'only_me'}
+                      onChange={(v) => {
+                        setPosted(v === 'all_team_members')
+                        setPublished(false)
+                      }
+                      }/> 
             {(systemFeatures.webapp_auth.enabled && (isGettingUserCanAccessApp || isGettingAppWhiteListSubjects))
               ? <div className='py-2'><Loading /></div>
               : <>
@@ -312,6 +361,7 @@ const AppPublisher = ({
                     </div>
                   </div>
                   {!isAppAccessSet && <p className='system-xs-regular mt-1 text-text-warning'>{t('app.publishApp.notSetDesc')}</p>}
+
                 </div>}
                 <div className='flex flex-col gap-y-1 border-t-[0.5px] border-t-divider-regular p-4 pt-3'>
                   <Tooltip triggerClassName='flex' disabled={!systemFeatures.webapp_auth.enabled || appDetail?.access_mode === AccessMode.EXTERNAL_MEMBERS || userCanAccessApp?.result} popupContent={t('app.noAccessPermission')} asChild={false}>
@@ -384,7 +434,7 @@ const AppPublisher = ({
                       handlePublish={handlePublish}
                       onRefreshData={onRefreshData}
                     />
-                  )}
+                  )} 
                 </div>
               </>}
           </div>
